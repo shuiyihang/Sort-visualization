@@ -1,0 +1,238 @@
+import tkinter
+import time
+import tkinter.messagebox
+import random
+mess_data=[10,4,1,5,7,2,3,6,8,9]
+src_len=len(mess_data)
+point_x=50
+point_y=400
+step_x=30
+interval_x=10
+#设定矩形形状
+max_value=10
+scope=200
+y_max_offset=-250
+
+sort_i=0
+sort_j=0
+insert_i=1
+preindex=0
+current=0
+
+lable_list=[]
+swap_num=1
+
+CYCLE=1
+#
+#范围是y=>450,x:50=>450
+#
+window = tkinter.Tk()
+window.title("Sort")
+#创建画布
+canvas = tkinter.Canvas (window,width=720,height=480,bg="white")
+
+def updata_label(src):#(src,i,y_max_offset)
+    for i in range(src_len):
+        rect_x1=point_x+i*(step_x+interval_x)
+        rect_y1=point_y
+        number=tkinter.Label(canvas,text=str(src[i]))
+        number.place(x=rect_x1+5,y=rect_y1+5)
+        lable_list.append(number)
+def clean_label():
+    while lable_list:
+        tkinter.Label.place_forget(self=lable_list.pop())
+def update_rect(num,index,color,y_offset,ident="normal"):#大小=>高度,下标=>远近
+    rect_tag=ident
+    rect_x1=point_x+index*(step_x+interval_x)
+    rect_y1=point_y-num/max_value*scope+y_offset
+    rect_x2=rect_x1+step_x
+    rect_y2=point_y+y_offset
+    #print("%d-%d-%d-%d"%(rect_x1,rect_y1,rect_x2,rect_y2))
+    if rect_tag=="normal":
+        rect_tag="rect_"+str(rect_x1)
+    canvas.create_rectangle(rect_x1,rect_y1,rect_x2,rect_y2,fill=color,outline=color,tag=rect_tag)
+    canvas.pack()
+
+def update_windows(src):
+    canvas.delete("all")
+    for i in range(src_len):
+        rect_x1=point_x+i*(step_x+interval_x)
+        rect_y1=point_y-src[i]/max_value*scope
+        rect_x2=rect_x1+step_x
+        rect_y2=point_y
+        #print("%d-%d-%d-%d"%(rect_x1,rect_y1,rect_x2,rect_y2))
+        rect_tag="rect_"+str(rect_x1)
+        canvas.create_rectangle(rect_x1,rect_y1,rect_x2,rect_y2,fill='blue',outline='blue',tag=rect_tag)
+        canvas.pack()
+        number=tkinter.Label(canvas,text=str(src[i]))
+        number.place(x=rect_x1+5,y=rect_y1-20)
+        lable_list.append(number)
+        
+#冒泡排序的优化
+#时间复杂度
+def bubble(src):
+    global sort_j,sort_i
+    global swap_num
+    print(swap_num)
+    if sort_i==src_len-1 or (swap_num==0 and sort_j==src_len-2-sort_i):
+        #显示已经排序完成
+        tkinter.messagebox.showinfo(title="sort exit",message="已排序完成")
+        return
+    if sort_j==src_len-2-sort_i:
+        swap_num=0
+    for i in range(sort_i,src_len):
+        for j in range(sort_j,src_len-1-i):
+            #print("i:%d,j:%d"%(i,j))
+            clean_label()
+            update_windows(mess_data)
+            update_rect(src[j],j,"red",0)
+            update_rect(src[j+1],j+1,"red",0)
+            if src[j]>src[j+1]:
+                temp=src[j]
+                src[j]=src[j+1]
+                src[j+1]=temp
+
+                swap_num=swap_num+1
+                sort_j=j+1
+                if j==src_len-2-i:
+                    i=i+1
+                    sort_j=0
+                break
+            else:
+                if j==src_len-2-i:
+                    i=i+1
+                    sort_j=0
+                    break
+                else:
+                   sort_j=j+1
+                   break 
+        sort_i=i
+        break
+def select_sort(src):#绿色标识最小，红色标识当前寻找最小的过程
+    global sort_i,sort_j
+    if sort_j==src_len:
+        while lable_list:
+                tkinter.Label.place_forget(self=lable_list.pop())
+        update_windows(mess_data)
+        tkinter.messagebox.showinfo(title="sort exit",message="已排序完成")
+        return
+    for i in range(sort_i,src_len-1):
+        mix_index=i
+        for j in range(sort_j,src_len):
+            clean_label()
+            update_windows(mess_data)
+            update_rect(src[j],j,"red",0)
+            update_rect(src[mix_index],mix_index,"green",0)
+            #print("<<i:%d,mix:%d,j:%d"%(i,mix_index,j))
+            if(src[j]<src[mix_index]):
+                mix_index=j
+            sort_j=j+1
+            break
+        #print("i:%d,mix:%d,sort_j=%d>>"%(i,mix_index,sort_j))
+        if mix_index!=i:
+            src[mix_index],src[i]=src[i],src[mix_index]
+        if sort_j==src_len:
+                i=i+1
+                sort_j=i+1
+        sort_i=i
+        break
+
+def insertSort(src):
+    global insert_i,CYCLE,preindex,current,sort_i
+    flag=1
+    if insert_i==src_len:
+        tkinter.messagebox.showinfo(title="sort exit",message="已排序完成")
+        return 
+    for i in range(insert_i,src_len):
+        #在上面重画需要排序的
+        if CYCLE:
+            preindex=i-1
+            current=src[i]
+            #print("current_top:%d"%current)
+            pos_x1=point_x+i*(step_x+interval_x)
+            rect_tag="rect_"+str(pos_x1)
+            canvas.delete(rect_tag)
+            update_rect(current,i,"red",y_max_offset,"special")
+
+            clean_label()
+            updata_label(src)
+            CYCLE=0
+            sort_i=i
+            break
+
+        while preindex >=0 and current<src[preindex]:
+            src[preindex+1]=src[preindex]#后移
+
+            flag=0
+            
+            #print("preindex:%d"%(preindex))
+
+            pos_x1=point_x+preindex*(step_x+interval_x)
+            rect_tag="rect_"+str(pos_x1)
+            canvas.delete(rect_tag)
+            update_rect(src[preindex],preindex+1,"green",0)
+            clean_label()
+
+            canvas.delete("special")
+            sort_i-=1
+            update_rect(current,sort_i,"red",y_max_offset,"special")
+
+            updata_label(src)
+
+
+            
+            preindex-=1
+            break
+        if  flag:#把数据放到最终位置
+            src[preindex+1]=current
+
+            canvas.delete("special")
+
+            pos_x1=point_x+(preindex+1)*(step_x+interval_x)
+            rect_tag="rect_"+str(pos_x1)
+            update_rect(current,preindex+1,"green",0,rect_tag)
+            insert_i+=1
+            CYCLE=1
+
+            clean_label()
+            updata_label(src)
+        break
+
+def step_insert():
+    insertSort(mess_data)
+
+def step_bubble():
+    #global sort_j
+    bubble(mess_data)
+def step_select():
+    select_sort(mess_data)
+
+def creat_messdata():
+    global mess_data,sort_i,sort_j,swap_num
+    sort_i=0
+    sort_j=0
+    swap_num=1
+    temp_list=[]
+    for element in range(10):
+        temp_list.append(random.randint(1,10))
+    mess_data=temp_list
+    while lable_list:
+                tkinter.Label.place_forget(self=lable_list.pop())
+    update_windows(mess_data)
+
+
+
+update_windows(mess_data)
+updata_button=tkinter.Button(window,text="更新数据",command=creat_messdata,width=10,height=1)
+updata_button.place(x=600,y=200)
+bubble_button=tkinter.Button(window,text="冒泡排序",command=step_bubble,width=10,height=1)
+bubble_button.place(x=600,y=250)
+select_button=tkinter.Button(window,text="选择排序",command=step_select,width=10,height=1)
+select_button.place(x=600,y=300)
+insert_button=tkinter.Button(window,text="插入排序",command=step_insert,width=10,height=1)
+insert_button.place(x=600,y=350)
+window.mainloop()
+
+
+
+
